@@ -6,6 +6,7 @@ import csv
 import scipy
 from conformalInference.mRMR import MRMR
 from conformalInference.loco import LOCOModel
+from conformalInference.wilcoxon import WilcoxonTest
 
 '''
 Loading data into a python pandas dataframe (set of rows and columns)
@@ -89,7 +90,7 @@ Calculating feature importance using LOCO and features found using MRMR
 
 '''
 importanceMeasureAllFeatures = dict()
-for labels in [33]:
+for labels in [34]:
     allFeatures = featuresDict[('scale_large4',10)]
     dataFeatures = [x for x in allFeatures]
     dataFeatures.insert(0,data.columns[labels])
@@ -102,10 +103,9 @@ for labels in [33]:
 Performing wilcoxon signed rank test
 '''
 
-wilcoxonU = dict()
-
 for key,value in importanceMeasureAllFeatures.items():
     importanceMeasureAllFeatures[key] = np.concatenate(importanceMeasureAllFeatures[key])
-    wilcoxonU[key] = scipy.stats.wilcoxon(importanceMeasureAllFeatures[key],[0]*70)
 
-print(wilcoxonU)
+wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures,[0]*math.ceil(selective_df.shape[0]/2))
+wilcoxonU.test()
+wilcoxonU.sort("scale_large4_with_parents_dummy.csv")
