@@ -2,13 +2,17 @@ from sklearn.metrics import log_loss
 from sklearn.linear_model import LogisticRegression
 from sklearn.model_selection import train_test_split
 import numpy as np
+import logging
+from sklearn.metrics import accuracy_score
 
 
 
 class LOCOModel:
-    def __init__(self,data,impFeatures):
+    def __init__(self,data,impFeatures,model):
         self.data = data
         self.impFeatures = impFeatures
+        self.model = model
+        logging.basicConfig(filename='analysis.log', level=logging.DEBUG)
 
 
     '''
@@ -29,15 +33,26 @@ class LOCOModel:
         for feature in self.impFeatures:
             importanceMeasure[feature] = list()
         for i in range(0,test_X.shape[0]):
-            regAlgo = LogisticRegression(C=10)
+            regAlgo = self.model
             regAlgo.fit(train_X.values,list(train_y.values))
             y_pred = regAlgo.predict_proba((test_X.iloc[i].values).reshape(1,-1))
             for feature in self.impFeatures:
                 selective_train_X = train_X.drop([feature],axis=1)
                 selective_test_X = test_X.drop([feature],axis=1)
-                regAlgo2 = LogisticRegression(C=10)
+                regAlgo2 = self.model
                 regAlgo2.fit(selective_train_X.values,list(train_y.values))
                 y_pred_selective = regAlgo2.predict_proba((selective_test_X.iloc[i].values).reshape(1,-1))
                 importanceMeasure[feature].append(abs(self.calculateLoss(test_y.iloc[i],y_pred_selective,axis=1))-abs(self.calculateLoss(test_y.iloc[i],y_pred,axis=1)))
 
         return importanceMeasure
+
+    '''
+    Calculate accuracy of the model
+    '''
+
+    def calculateAccuracy(self,outcome,method):
+        train_X, test_X, train_y, test_y = train_test_split(self.data.iloc[:,1:],self.data.iloc[:,0],test_size=0.5)
+        model = self.model
+        model.fit(train_X.values,list(train_y.values))
+        y_pred = model.predict(test_X.values)
+        logging.debug("Accuracy of predicting {} using {} is {}".format(outcome,method,str(accuracy_score(list(test_y.values),y_pred))))

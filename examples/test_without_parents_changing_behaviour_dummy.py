@@ -88,8 +88,9 @@ Calculating feature importance using LOCO and features found using MRMR
 
 '''
 importanceMeasureAllFeatures = dict()
-for labels in [33]:
-    allFeatures = featuresDict[('scale_large4',10)]
+for labels in [31]:
+    #allFeatures = featuresDict[('scale_large2',15)]
+    allFeatures = list(selective_df.columns[[3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34,35]])
     dataFeatures = [x for x in allFeatures]
     dataFeatures.insert(0,data.columns[labels])
     testing_data = selective_df[dataFeatures]
@@ -106,4 +107,4 @@ for key,value in importanceMeasureAllFeatures.items():
 
 wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures,[0]*math.ceil(selective_df.shape[0]/2))
 wilcoxonU.test()
-wilcoxonU.sort("scale_large4_without_parents_dummy.csv")
+wilcoxonU.sort("Results/scale_large2_without_parents_dummy_all.csv")

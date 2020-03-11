@@ -30,13 +30,15 @@ for index,row in data.groupby(['scale_large2']):
     '''
     Dropping unnecessary rows(not_reported)
     '''
-    row = row.drop(['parents_changing_behavior_dummy'],axis=1)
+    row = row[row.parents_changing_behavior_dummy!='not_reported']
+    row['parents_changing_behavior_dummy'] = row['parents_changing_behavior_dummy'].replace('no_change','no')
     row = row[row.citation_index!='not_reported']
     row = row[row.scale_large!=99.0]
     row = row.drop(['unit_treatment_household','unit_treatment_site'],axis=1)
     row.shape
 
     row['low_socio_econ'] = changeToCategorical(row['low_socio_econ'])
+    row['parents_changing_behavior_dummy'] = changeToCategorical(row['parents_changing_behavior_dummy'])
     row['outcome_schooling_dummy'] = changeToCategorical(row['outcome_schooling_dummy'])
     row['outcome_cognitive_dummy'] = changeToCategorical(row['outcome_cognitive_dummy'])
     row['outcome_language_dummy'] = changeToCategorical(row['outcome_language_dummy'])
@@ -60,16 +62,15 @@ for index,row in data.groupby(['scale_large2']):
     print(selective_df.shape)
 
 
-
     '''
     Calculating the top 'k' features for each outcome variable using MrMR (k={10,15})
 
     '''
 
-    Y_index=[35]
+    Y_index=[36]
     featuresDict = dict()
     for index in Y_index:
-        train_data = selective_df.iloc[:,[index,3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34]]
+        train_data = selective_df.iloc[:,[index,3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,31,35]]
         mrmrModel = MRMR(train_data,10)
         mrmrModel2 = MRMR(train_data,15)
         featuresDict[(selective_df.columns[index],10)] = mrmrModel.findBestFeatures()
@@ -82,9 +83,9 @@ for index,row in data.groupby(['scale_large2']):
 
     '''
     importanceMeasureAllFeatures = dict()
-    for labels in [35]:
-        allFeatures = featuresDict[('sig',15)]
-        #allFeatures = list(selective_df.columns[[3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34]])
+    for labels in [36]:
+        #allFeatures = featuresDict[('sig',15)]
+        allFeatures = list(selective_df.columns[[3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,31,35]])
         dataFeatures = [x for x in allFeatures]
         dataFeatures.insert(0,selective_df.columns[labels])
         testing_data = selective_df[dataFeatures]
@@ -100,4 +101,4 @@ for index,row in data.groupby(['scale_large2']):
 
     wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures,[0]*math.ceil(selective_df.shape[0]/2))
     wilcoxonU.test()
-    wilcoxonU.sort("Results/sig_importance_group_scale_large2(15).csv")
+    wilcoxonU.sort("Results/sig_importance_group_scale_large2_parents_dummy_all.csv")

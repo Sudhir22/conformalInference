@@ -4,6 +4,8 @@ import math
 import numpy as np
 import csv
 import scipy
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from conformalInference.mRMR import MRMR
 from conformalInference.loco import LOCOModel
 from conformalInference.wilcoxon import WilcoxonTest
@@ -22,6 +24,9 @@ data = data[data.parents_changing_behavior_dummy!='not_reported']
 data['parents_changing_behavior_dummy'] = data['parents_changing_behavior_dummy'].replace('no_change','no')
 data = data[data.citation_index!='not_reported']
 data = data[data.scale_large!=99.0]
+data = data[data.scale_large2!=99.0]
+data = data[data.scale_large3!=99.0]
+data = data[data.scale_large4!=99.0]
 data = data.drop(['unit_treatment_household','unit_treatment_site'],axis=1)
 data.shape
 
@@ -64,7 +69,7 @@ selective_df.shape
 
 selective_df.columns
 
-
+model = DecisionTreeClassifier(random_state=0)
 
 
 
@@ -73,14 +78,12 @@ Calculating the top 'k' features for each outcome variable using MrMR (k={10,15}
 
 '''
 
-Y_index=[32,33,34]
+Y_index=[34]
 featuresDict = dict()
 for index in Y_index:
     train_data = selective_df.iloc[:,[index,3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,35,36]]
-    mrmrModel = MRMR(train_data,10)
-    mrmrModel2 = MRMR(train_data,15)
-    featuresDict[(data.columns[index],10)] = mrmrModel.findBestFeatures()
-    featuresDict[(data.columns[index],15)] = mrmrModel2.findBestFeatures()
+    mrmrModel = MRMR(train_data,[3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,35,36],model)
+    featuresDict[(data.columns[index])] = mrmrModel.findBestFeatures()
 mrmrModel.iterateDict(featuresDict)
 
 
@@ -91,11 +94,13 @@ Calculating feature importance using LOCO and features found using MRMR
 '''
 importanceMeasureAllFeatures = dict()
 for labels in [34]:
-    allFeatures = featuresDict[('scale_large4',10)]
+    #allFeatures = featuresDict[('scale_large4')]
+    allFeatures = list(selective_df.columns[[3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,35,36]])
     dataFeatures = [x for x in allFeatures]
     dataFeatures.insert(0,data.columns[labels])
     testing_data = selective_df[dataFeatures]
-    locoModel = LOCOModel(testing_data,allFeatures)
+    locoModel = LOCOModel(testing_data,allFeatures,model)
+    locoModel.calculateAccuracy("scale_large4","decision trees")
     importanceMeasureAllFeatures = locoModel.locoLocal()
 
 
@@ -108,4 +113,4 @@ for key,value in importanceMeasureAllFeatures.items():
 
 wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures,[0]*math.ceil(selective_df.shape[0]/2))
 wilcoxonU.test()
-wilcoxonU.sort("scale_large4_with_parents_dummy.csv")
+wilcoxonU.sort("Results/DecisionTree/scale_large4_with_all_features.csv")
