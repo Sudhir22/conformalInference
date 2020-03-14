@@ -4,6 +4,8 @@ import math
 import numpy as np
 import csv
 import scipy
+from sklearn.linear_model import LogisticRegression
+from sklearn.tree import DecisionTreeClassifier
 from conformalInference.mRMR import MRMR
 from conformalInference.loco import LOCOModel
 from conformalInference.wilcoxon import WilcoxonTest
@@ -12,7 +14,7 @@ from conformalInference.wilcoxon import WilcoxonTest
 Loading data into a python pandas dataframe (set of rows and columns)
 
 '''
-data = pd.read_stata("machine_learning_v5.dta")
+data = pd.read_stata("machine_learning_v6.dta")
 data.shape
 
 '''
@@ -63,22 +65,20 @@ selective_df.shape
 selective_df.columns
 
 
-
-
+#model = DecisionTreeClassifier(random_state=0)
+model = LogisticRegression(C=10,solver='liblinear')
 
 '''
 Calculating the top 'k' features for each outcome variable using MrMR (k={10,15})
 
 '''
 
-Y_index=[31,32,33]
+Y_index=[31]
 featuresDict = dict()
 for index in Y_index:
     train_data = selective_df.iloc[:,[index,3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34,35]]
-    mrmrModel = MRMR(train_data,10)
-    mrmrModel2 = MRMR(train_data,15)
-    featuresDict[(data.columns[index],10)] = mrmrModel.findBestFeatures()
-    featuresDict[(data.columns[index],15)] = mrmrModel2.findBestFeatures()
+    mrmrModel = MRMR(train_data,[3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34,35],model)
+    featuresDict[data.columns[index]] = mrmrModel.findBestFeaturesMRMR()
 mrmrModel.iterateDict(featuresDict)
 
 
@@ -89,14 +89,14 @@ Calculating feature importance using LOCO and features found using MRMR
 '''
 importanceMeasureAllFeatures = dict()
 for labels in [31]:
-    #allFeatures = featuresDict[('scale_large2',15)]
-    allFeatures = list(selective_df.columns[[3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34,35]])
+    allFeatures = featuresDict['scale_large2']
+    #allFeatures = list(selective_df.columns[[3,11,13,14,15,16,17,18,19,20,21,22,24,25,26,27,28,29,30,34,35]])
     dataFeatures = [x for x in allFeatures]
     dataFeatures.insert(0,data.columns[labels])
     testing_data = selective_df[dataFeatures]
-    locoModel = LOCOModel(testing_data,allFeatures)
+    locoModel = LOCOModel(testing_data,allFeatures,model)
+    locoModel.calculateAccuracy("scale_large3","logistic regression")
     importanceMeasureAllFeatures = locoModel.locoLocal()
-
 
 '''
 Performing wilcoxon signed rank test
@@ -105,6 +105,10 @@ Performing wilcoxon signed rank test
 for key,value in importanceMeasureAllFeatures.items():
     importanceMeasureAllFeatures[key] = np.concatenate(importanceMeasureAllFeatures[key])
 
-wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures,[0]*math.ceil(selective_df.shape[0]/2))
+wilcoxonU = WilcoxonTest(importanceMeasureAllFeatures)
 wilcoxonU.test()
-wilcoxonU.sort("Results/scale_large2_without_parents_dummy_all.csv")
+wilcoxonU.sort("Results/LogisticRegression/scale_large2_without_parents_dummy_mrmr_features.csv")
+df = pd.DataFrame(wilcoxonU.result.items(),columns=["LOCO_results","P-value"])
+df['MRMR_results'] = featuresDict['scale_large2']
+
+df.to_csv("Results/LogisticRegression/scale_large2_without_parents_dummy_mrmr_features.csv",index=None)
