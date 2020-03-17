@@ -9,6 +9,7 @@ from sklearn.tree import DecisionTreeClassifier
 from conformalInference.mRMR import MRMR
 from conformalInference.loco import LOCOModel
 from conformalInference.wilcoxon import WilcoxonTest
+from conformalInference.display import Display
 
 '''
 Loading data into a python pandas dataframe (set of rows and columns)
@@ -94,6 +95,7 @@ Calculating feature importance using LOCO and features found using MRMR
 
 '''
 importanceMeasureAllFeatures = dict()
+errorIntervals = dict()
 for labels in [34]:
     allFeatures = featuresDict[('scale_large4')]
     #allFeatures = list(selective_df.columns[[3,4,12,14,15,16,17,18,19,20,21,22,23,25,26,27,28,29,30,31,35,36]])
@@ -103,6 +105,7 @@ for labels in [34]:
     locoModel = LOCOModel(testing_data,allFeatures,model)
     locoModel.calculateAccuracy("scale_large4","logistic regression")
     importanceMeasureAllFeatures = locoModel.locoLocal()
+    errorIntervals = locoModel.locoWithConformalInference()
 
 
 '''
@@ -119,3 +122,12 @@ df = pd.DataFrame(wilcoxonU.result.items(),columns=["LOCO_results","P-value"])
 df['MRMR_results'] = featuresDict['scale_large4']
 
 df.to_csv("Results/LogisticRegression/scale_large4_with_parents_dummy_mrmr_features.csv",index=None)
+
+
+'''
+Displaying interval graphs for error intervals
+'''
+
+for key,value in errorIntervals.items():
+    graphDisplay = Display(errorIntervals[key],[l for l in range(1,selective_df.shape[0]+1)],key)
+    graphDisplay.plot_graph()

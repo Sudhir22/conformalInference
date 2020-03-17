@@ -1,6 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 import numpy as np
-
+from sklearn.model_selection import train_test_split
+import math
 
 
 class SplitConformal:
@@ -22,8 +23,8 @@ class SplitConformal:
         Split conformal prediction
     '''
 
-    def splitConformal(self):
-        train_X,test_X,train_Y,test_Y = train_test_split(data_X,data_Y,test_size=0.5)
+    def splitConformalInference(self):
+        train_X,test_X,train_Y,test_Y = train_test_split(self.data_X,self.data_Y,test_size=0.5)
         regAlgo = LogisticRegression(C=10)
         regAlgo.fit(train_X,list(train_Y.values))
         y_pred = regAlgo.predict_proba(test_X.values)
@@ -36,4 +37,4 @@ class SplitConformal:
         k = math.ceil(((train_X.shape[0]/2.0)+1)*(1-self.miscoverage))
         sortedlossList = sorted(residualsList)
         d = sortedlossList[k-1]
-        return (regAlgo,[regAlgo.predict(self.xNew.values.reshape(1,-1))-d, regAlgo.predict(self.xNew.values.reshape(1,-1))+d])
+        return [regAlgo.predict(self.xNew.values.reshape(1,-1))-d, regAlgo.predict(self.xNew.values.reshape(1,-1))+d]

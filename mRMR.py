@@ -5,6 +5,7 @@ from sklearn.metrics import log_loss
 from sklearn.metrics import mutual_info_score
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.model_selection import train_test_split
+from bartpy.sklearnmodel import SklearnModel
 import logging
 
 
