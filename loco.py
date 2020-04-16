@@ -69,40 +69,4 @@ class LOCOModel:
 
 
 
-    '''
-    LOCO + Split conformal
-    '''
-
-    def locoWithConformalInference(self):
-        k = KFold(n_splits=2)
-        errorIntervals = dict()
-        for feature in self.impFeatures:
-            errorIntervals[feature] = list()
-        for train_index,test_index in k.split(self.data.iloc[:,1:]):
-            train_X,test_X = self.data.iloc[train_index,1:],self.data.iloc[test_index,1:]
-            train_y,test_y = self.data.iloc[train_index,0],self.data.iloc[test_index,0]
-            for i in range(0,test_X.shape[0]):
-                conformalSet = list()
-                inference = SplitConformal(train_X,train_y,0.05,test_X.iloc[i])
-                confidenceInterval = sorted(inference.splitConformalInference())
-                if confidenceInterval[0]<=0:
-                    conformalSet.append(0)
-                if confidenceInterval[1]>=1:
-                    conformalSet.append(1)
-                regAlgo = self.model
-                regAlgo.fit(train_X.values,list(train_y.values))
-                y_pred = regAlgo.predict_proba(test_X.iloc[i].values.reshape(1,-1))
-                for feature in self.impFeatures:
-                    selective_train_X = train_X.drop([feature],axis=1)
-                    selective_test_X = test_X.drop([feature],axis=1)
-                    regAlgo2 = self.model
-                    regAlgo2.fit(selective_train_X.values,list(train_y.values))
-                    y_pred_selective = regAlgo2.predict_proba((selective_test_X.iloc[i].values).reshape(1,-1))
-                    tempList= list()
-                    for x in conformalSet:
-                        tempList.append(abs(self.calculateLoss(x,y_pred_selective,axis=1))-abs(self.calculateLoss(x,y_pred,axis=1)))
-                    if len(conformalSet) == 1:
-                        tempList.append(abs(self.calculateLoss(conformalSet[0],y_pred_selective,axis=1))-abs(self.calculateLoss(conformalSet[0],y_pred,axis=1)))
-                    errorIntervals[feature].append(tempList)
-
-        return errorIntervals
+    
