@@ -9,5 +9,6 @@ In those cases, it is important to find features which are most important for pr
 
 I will be adding other algorithms as well in the near future. <br>
 
+One of the techniques that I used in my current research is a hybrid combination of mRMR and LOCO. <br>
 
 
